@@ -6,7 +6,7 @@ library.
 
 To run this application, you must install the following npm_ packages,
 
-.. code-block:: bash
+.. code-block::
     npm install underscore underscore.string mustache
 
 We are using couchnode library for accessing couchbase database. Installing
@@ -17,7 +17,7 @@ Make sure that you connect with a valid couchbase server and have the
 ``beer-sample`` bucket installed.  `beer_designs.js` setsup view design docs
 used by this application. To setup the design document,
 
-.. code-block:: bash
+.. code-block::
     node beer.js -d     // -d switch with setup the design document.
 
 Following is the gist of what the map function does with `beer` documents,
