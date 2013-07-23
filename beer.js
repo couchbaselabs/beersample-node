@@ -7,7 +7,7 @@ var beer_designs = require('./beer_designs');
 var _u = require('underscore');
 var _s = require('underscore.string');
 var M = require('mustache');
-var couchbase = require('/Users/prataprc/0cb/couchnode/lib/couchbase');
+var couchbase = require('couchbase');
 
 // connection configuration to pass on to couchbase.connect(). Note that
 // while connecting with the server we are also opening the beer-sample
@@ -340,7 +340,7 @@ function normalize_beer_fields(data) {
 
 function main() {
     // Connect with couchbase server and get a bucket handler as call back.
-    // All subsequent API calls to `couchnode` library is made via
+    // All subsequent API calls to `couchbase` library is made via
     // bucket-handler `bsbucket`.
     couchbase.connect( config, function( err, bsbucket ) {
         if(err) {

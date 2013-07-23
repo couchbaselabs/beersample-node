@@ -20,7 +20,7 @@ used by this application. To setup the design document,
 
 .. code-block:: bash
 
-    node beer.js -d     // -d switch with setup the design document.
+    node beer.js -d     // -d switch will setup the design document.
 
 Following is the gist of what the map function does with `beer` documents,
 

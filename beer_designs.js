@@ -1,4 +1,4 @@
-var couchnode = require('couchnode');
+var couchbase = require('couchbase');
 
 // Setup design documents for beers and breweries to index beer-documents
 // based on beer-names and index brewery-documents based on brewery-names.
@@ -18,7 +18,7 @@ exports.setup = function( config ) {
               ].join('\n')
     }
 
-    couchnode.connect( config, function( err, bsbucket ) {
+    couchbase.connect( config, function( err, bsbucket ) {
         if(err) {
             console.log("Unable to connect to server");
             console.log(config);
@@ -67,7 +67,7 @@ exports.setup = function( config ) {
 }
 
 exports.reset = function( config ) {
-    couchnode.connect( config, function( err, bsbucket ) {
+    couchbase.connect( config, function( err, bsbucket ) {
         // Update the beer view, to index beers `by_name`.
         bsbucket.getDesignDoc( "beer", function( err, ddoc, meta ) {
             delete ddoc['views']['by_name'];
