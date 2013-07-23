@@ -2,6 +2,7 @@ var http = require('http');
 var fs = require('fs');
 var path = require('path');
 var qs = require('querystring');
+var util = require('util');
 var beer_designs = require('./beer_designs');
 
 var _u = require('underscore');
@@ -100,13 +101,13 @@ function breweries(db, req, res) {
 // Delete a beer document or brewery document. Document `id` is supplied as
 // part of the URL.
 function delobject( db, req, res ) {
-    try {
-        db.delete(req.matchdict[2]); // Refer to route() to know matchdict.
-    } catch(e) {
-        console.log( "Unable to delete document" + req.matchdict[2] );
-    }
-    res.writeHead(301, {Location : '/welcome'} );
-    res.end();
+    db.remove( req.matchdict[1], function(err, meta) {
+        if( err ) {
+            console.log( "Unable to delete document" + req.matchdict[1] );
+        }
+        res.writeHead(301, {Location : '/welcome'} );
+        res.end();
+    });
 }
 
 // Show individual beer document, with all its details. Document `id` is
@@ -215,37 +216,31 @@ function create_beer(db, req, res) {
         res.writeHead(200, {'Content-Type': 'text/html'});
         res.end( M.render(tmpl, view, partials) );
     } else if( req.method == 'POST' ) {
-        var data = '';
-        req.on('data', function(chunk) {
-            data += chunk;
-        });
-        req.on('end', function() {
-            var x = normalize_beer_fields( qs.parse( data ));
-            if( x.doc ) {
-                var beer_id = x.doc.brewery_id + '-' + 
-                              x.doc.name.replace(' ', '-').toLowerCase();
-                db.add( beer_id, x.doc, function(err, doc, meta) {
-                    res.writeHead(301, {Location : '/beers/show/'+beer_id} );
-                    res.end();
-                })
-            } else {
-                res.writeHead( x.err[0], {} );
+        var rc = normalize_beer_fields( qs.parse( req.data ));
+        if( rc.doc ) {
+            var beer_id = rc.doc.brewery_id + '-' + 
+                          rc.doc.name.replace(' ', '-').toLowerCase();
+            db.add( beer_id, rc.doc, function(err, doc, meta) {
+                res.writeHead(301, {Location : '/beers/show/'+beer_id} );
                 res.end();
-            }
-        });
+            })
+        } else {
+            res.writeHead( rc.err[0], {} );
+            res.end();
+        }
     }
 }
 
 function beer_search(db, req, res) {
-    var value = request.args.get('value')
+    var value = qs.parse( req.url.split('?')[1] ).value
     var q = { startkey : value,
               endkey : value + JSON.parse('"\u0FFF"'),
+              stale : false,
               limit : ENTRIES_PER_PAGE }
-    var results = [];
     db.view( "beer", "by_name", q, function(err, values) {
         var keys = _u.pluck(values, 'id');
         db.get( keys, null, function(err, docvals, metas) {
-            results = 
+            var results = 
                 _u.map( _u.zip( docvals, _u.pluck(metas, 'id') ), function(z) {
                     return { 'id' : z[1], 'name' : z[0].name, 
                              'brewery_id' : z[0].brewery_id }
@@ -257,15 +252,14 @@ function beer_search(db, req, res) {
 };
 
 function brewery_search(db, req, res) {
-    var value = request.args.get('value')
+    var value = qs.parse( req.url.split('?')[1] ).value
     var q = { startkey : value,
               endkey : value + JSON.parse('"\u0FFF"'),
               limit : ENTRIES_PER_PAGE }
-    var results = [];
     db.view( "brewery", "by_name", q, function(err, values) {
-        results = 
+        var results = 
             _u.map( values, function(value) {
-                return { 'id' : value.id, 'name' : value.name }
+                return { 'id' : value.id, 'name' : value.key }
             });
         res.writeHead( 200, {'Content-Type' : 'application/json'});
         res.end( JSON.stringify(results) );
@@ -278,15 +272,16 @@ var routes = [
     { patt : /\/js\/(.+)$/, action : jsfile },
     { patt : /\/$/, action : welcome },
     { patt : /\/welcome$/, action : welcome },
-    { patt : /\/beers$/, action : beers },
     { patt : /\/beers\/show\/(.+)$/, action : show_beer },
     { patt : /\/beers\/edit\/(.+)$/, action : edit_beer },
+    { patt : /\/beers\/delete\/(.+)$/, action : delobject },
     { patt : /\/beers\/create$/, action : create_beer },
-    { patt : /\/beers\/search$/, action : beer_search },
-    { patt : /\/breweries$/, action : breweries },
+    { patt : /\/beers\/search/, action : beer_search },
+    { patt : /\/beers$/, action : beers },  // This must come here.
     { patt : /\/breweries\/show\/(.+)$/, action : show_brewery },
-    { patt : /\/breweries\/search$/, action : brewery_search },
-    { patt : /\/([^\/]+)\/delete\/(.+)$/, action : delobject }
+    { patt : /\/breweries\/search/, action : brewery_search },
+    { patt : /\/breweries$/, action : breweries },  // This must come here.
+    { patt : /\/breweries\/delete\/(.+)$/, action : delobject }
 ]
 
 // request url route matching, to resolve request to action callables.
@@ -308,7 +303,7 @@ function route( bsbucket, req, res ) {
             if( m ) {
                 req.matchdict = m;
                 rt.action( bsbucket, req, res );
-                console.log( 'HTTP Request : ' + m );
+                console.log( 'HTTP Request : ' + req.method + ':' + req.url );
                 break;
             }
         }
