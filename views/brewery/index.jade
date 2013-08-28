@@ -1,0 +1,17 @@
+extends ../layout
+block content
+
+  h3 Browse Breweries
+  form(class="navbar-search pull-left")
+    input#beer-search(class="search-query" type="text" placeholder="Search for Breweries")
+    
+  table#brewery-table(class="table table-striped")
+    thead
+      tr
+        th Name
+        th
+    tbody
+      for brewery in breweries
+        tr
+          td: a(href="/breweries/show/#{brewery.id}") #{brewery.name}
+          td: a(class="btn btn-small btn-danger" href="/breweries/delete/#{brewery.id}") Delete

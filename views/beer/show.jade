@@ -1,0 +1,16 @@
+extends ../layout
+block content
+  
+  h3 Show Details for Beer #{beer.name}
+  table(class="table table-striped")
+    tbody
+      tr
+        td: strong #{beer.brewery_id}
+        td: a(href="/breweries/show/#{beer.brewery_id}") #{beer.brewery_id}
+      for beerfield in beerfields
+        tr
+          td: strong #{beerfield.key}
+          td #{beerfield.value}
+ 
+  a(class="btn btn-medium btn-warning" href="/beers/edit/#{beer.id}") Edit
+  a(class="btn btn-medium btn-danger" href="/beers/delete/#{beer.id}") Delete

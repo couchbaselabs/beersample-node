@@ -4,23 +4,17 @@ Beers and Breweries application using node.
 This is a sample web application written with the node.js and couchnode 
 library.
 
-To run this application, you must install the following npm_ packages,
-
-.. code-block:: bash
-
-    npm install underscore underscore.string mustache
-
 We are using couchnode library for accessing couchbase database. Installing
-couchnode is not straight forward as it uses libcouchbase_ and C++-bindings to
-libcouchbase. Refer to couchnode_ project for installing it.
+couchnode is not straight forward as it uses libcouchbase_ and a C++ binding to
+libcouchbase. Refer to couchnode_ project for installation instructions.
 
 Make sure that you connect with a valid couchbase server and have the
-``beer-sample`` bucket installed.  `beer_designs.js` setsup view design docs
-used by this application. To setup the design document,
+``beer-sample`` bucket installed.  `beer_designs.js` sets up view design docs
+used by this application. To setup the additional design documents,
 
 .. code-block:: bash
 
-    node beer.js -d     // -d switch will setup the design document.
+    node beer.js --setup     // --setup switch will setup the design document.
 
 Following is the gist of what the map function does with `beer` documents,
 

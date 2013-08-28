@@ -1,0 +1,24 @@
+extends ../layout
+block content
+
+  h3 Browse Beers
+  form(class="navbar-search pull-left")
+    input#beer-search(class="search-query" type="text" placeholder="Search for Beers")
+    
+  table#beer-table(class="table table-striped")
+    thead
+      tr
+        th Name
+        th Brewery
+        th
+    tbody
+      for beer in beers
+        tr
+          td: a(href="/beers/show/#{beer.id}") #{beer.name}
+          td: a(href="/breweries/show/#{beer.brewery_id}") To Brewery
+          td
+            a(class="btn btn-small btn-warning" href="/beers/edit/#{beer.id}") Edit
+            a(class="btn btn-small btn-danger" href="/beers/delete/#{beer.id}") Delete
+  
+  div
+    a(class="btn btn-small btn-success" href="/beers/create") Add Beer

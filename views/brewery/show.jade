@@ -1,0 +1,10 @@
+extends ../layout
+block content
+  
+  h3 Show Details for Brewery #{brewery.name}
+  table(class="table table-striped")
+    tbody
+      for breweryfield in breweryfields
+        tr
+          td: strong #{breweryfield.key}
+          td #{breweryfield.value}
