@@ -190,6 +190,7 @@ exports.start = function(config)
     var beer_id = doc.brewery_id + '-' +
                   doc.name.replace(' ', '-').toLowerCase();
     db.add( beer_id, doc, function(err, result) {
+      if (err) throw err;
       res.redirect('/beers/show/'+beer_id);
     });
   }
