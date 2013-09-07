@@ -6,7 +6,7 @@ var couchbase = require('couchbase');
 // The following functions acts synchronously so that we can know when to safely
 //   exit.  This is a workaround for a current bug in the client that stops node
 //   from gracefully exiting while a Couchbase connection is active.
-  
+
 exports.setup = function( config ) {
     var beer_by_name = {
         map : [ 'function(doc, meta) {',
@@ -29,7 +29,7 @@ exports.setup = function( config ) {
             console.log(config);
             process.exit(1);
         }
-        
+
         // Update the beer view, to index beers `by_name`.
         bsbucket.getDesignDoc( "beer", function( err, ddoc, meta ) {
             if(! ('by_name' in ddoc['views']) ) {
@@ -40,7 +40,7 @@ exports.setup = function( config ) {
                     } else if (res.ok) {
                         console.log( 'Updated ' + res.id );
                     }
-                    
+
                     // Update or create the brewery view, to index brewery or `by_name`.
                     bsbucket.getDesignDoc( "brewery", function( err, ddoc, meta ) {
                       if (err) {
@@ -52,7 +52,7 @@ exports.setup = function( config ) {
                           } else if (res.ok) {
                               console.log( 'Updated ' + res.id );
                           }
-                          
+
                           process.exit(0);
                         });
                       } else {
@@ -65,20 +65,23 @@ exports.setup = function( config ) {
                             } else if (res.ok) {
                               console.log( 'Updated ' + res.id );
                             }
-                            
+
                             process.exit(0);
                           });
                         }
                       }
                     });
-                    
+
                 });
+            } else {
+              console.log('already setup');
+              process.exit(0);
             }
         })
     })
 }
 
-exports.reset = function( config ) {  
+exports.reset = function( config ) {
   var bsbucket = new couchbase.Connection( config, function( err ) {
     if(err) {
       console.error("Failed to connect to cluster: " + err);
@@ -89,25 +92,25 @@ exports.reset = function( config ) {
     bsbucket.getDesignDoc( "beer", function( err, ddoc, meta ) {
       console.log(err);
       console.log('get done');
-      
+
       delete ddoc['views']['by_name'];
       bsbucket.setDesignDoc( "beer", ddoc, function( err, res ) {
         console.log('set done');
-        
+
         if(err) {
             console.log( 'ERROR' + err );
         } else if (res.ok) {
             console.log( 'Updated ' + res.id );
         }
-       
+
         // Update or create the brewery view, to index brewery or `by_name`.
         bsbucket.removeDesignDoc( "brewery", function(err, res) {
           console.log('delete done');
             console.log(err);
-            
+
             process.exit(0);
         });
-        
+
       });
     })
   })

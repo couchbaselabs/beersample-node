@@ -187,7 +187,7 @@ exports.start = function(config)
   }
   function done_create_beer(req, res) {
     var doc = normalize_beer_fields(req.body);
-    var beer_id = doc.brewery_id + '-' +
+    var beer_id = doc.brewery_id.toLowerCase() + '-' +
                   doc.name.replace(' ', '-').toLowerCase();
     db.add( beer_id, doc, function(err, result) {
       if (err) throw err;

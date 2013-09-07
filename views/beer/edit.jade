@@ -11,8 +11,7 @@ block content
       legend General Info
       .span12
         .span6
-          label Type
-          input(type="text" name="beer_type" placeholder="Type of the document" value="#{beer.type}")
+          input(type="hidden" name="beer_type" value="beer")
           label Name
           input(type="text" name="beer_name" placeholder="The name of the beer" value="#{beer.name}")
           label Description
