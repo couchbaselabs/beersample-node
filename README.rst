@@ -49,7 +49,7 @@ To run the webapp, simply do::
 
     node beer.js
 
-And connect to ``localhost:1337``
+And connect to ``localhost:1337/welcome``
 
 .. _npm: https://npmjs.org/
 .. _libcouchbase: https://github.com/couchbase/libcouchbase
