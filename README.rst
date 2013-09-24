@@ -8,6 +8,14 @@ We are using couchnode library for accessing couchbase database. Installing
 couchnode is not straight forward as it uses libcouchbase_ and a C++ binding to
 libcouchbase. Refer to couchnode_ project for installation instructions.
 
+Once you've installed libcouchbase and couchnode, be sure to install the
+beersample-node dependencies with npm:
+
+.. code-block:: bash
+
+    cd beersample-node
+    npm install
+
 Make sure that you connect with a valid couchbase server and have the
 ``beer-sample`` bucket installed.  `beer_designs.js` sets up view design docs
 used by this application. To setup the additional design documents,
