@@ -6,6 +6,13 @@ var _ = require('underscore');
 
 var ENTRIES_PER_PAGE = 30;
 
+// Helper function for cleaning strings passed to N1QL queries.
+function n1qlCleanString(val) {
+  val = val.replace('\\', '\\\\');
+  val = val.replace('\'', '\\\'');
+  return val;
+}
+
 exports.start = function(config)
 {
   // Connect with couchbase server.  All subsequent API calls
@@ -35,29 +42,10 @@ exports.start = function(config)
 
   // List of beers.
   function list_beers(req, res) {
-    var q = {
-      limit : ENTRIES_PER_PAGE,   // configure max number of entries.
-      stale : false               // We don't want stale views here.
-    };
-
-    db.view( "beer", "by_name", q).query(function(err, values) {
-      // 'by_name' view's map function emits beer-name as key and value as
-      // null. So values will be a list of
-      //      [ {id: <beer-id>, key: <beer-name>, value: <null>}, ... ]
-
-      // we will fetch all the beer documents based on its id.
-      var keys = _.pluck(values, 'id');
-
-      db.getMulti( keys, null, function(err, results) {
-
-        // Add the id to the document before sending to template
-        var beers = _.map(results, function(v, k) {
-          v.value.id = k;
-          return v.value;
-        });
-
-        res.render('beer/index', {'beers':beers});
-      })
+    db.query(
+        "SELECT META().id AS id, * FROM beer-sample WHERE type='beer' LIMIT " + ENTRIES_PER_PAGE,
+        function(err, beers) {
+      res.render('beer/index', {'beers':beers});
     });
   }
   app.get('/beers', list_beers);
@@ -65,16 +53,10 @@ exports.start = function(config)
   // List of brewery. Logic is same as above except that we will be gathering
   // brewery documents and rendering them.
   function list_breweries(req, res) {
-    var q = { limit:ENTRIES_PER_PAGE };
-    db.view( "brewery", "by_name", q).query(function(err, results) {
-      var breweries = _.map(results, function(v, k) {
-        return {
-          'id': v.id,
-          'name': v.key
-        };
-      });
-
-      res.render('brewery/index', {'breweries':breweries});
+    db.query(
+        "SELECT META().id AS id, name FROM beer-sample WHERE type='brewery' LIMIT " + ENTRIES_PER_PAGE,
+        function(err, breweries) {
+          res.render('brewery/index', {'breweries':breweries});
     });
   }
   app.get('/breweries', list_breweries);
@@ -197,45 +179,23 @@ exports.start = function(config)
   app.get('/beers/create', begin_create_beer);
   app.post('/beers/create', done_create_beer);
 
-
   function search_beer(req, res) {
-    var value = req.query.value;
-    var q = { startkey : value,
-              endkey : value + JSON.parse('"\u0FFF"'),
-              stale : false,
-              limit : ENTRIES_PER_PAGE }
-    db.view( "beer", "by_name", q).query(function(err, values) {
-      var keys = _.pluck(values, 'id');
-      db.getMulti( keys, null, function(err, results) {
-        var beers = [];
-        for(var k in results) {
-          beers.push({
-            'id': k,
-            'name': results[k].value.name,
-            'brewery_id': results[k].value.brewery_id
-          });
-        }
+    var term = n1qlCleanString(req.query.value).toLowerCase();
 
-        res.send(beers);
-      });
+    db.query(
+        "SELECT META().id, name, brewery_id FROM beer-sample WHERE type='beer' AND LOWER(name) LIKE '%" + term + "%' LIMIT " + ENTRIES_PER_PAGE,
+        function(err, beers) {
+      res.send(beers);
     });
   };
   app.get('/beers/search', search_beer);
 
   function search_brewery(req, res) {
-    var value = req.query.value;
-    var q = { startkey : value,
-              endkey : value + JSON.parse('"\u0FFF"'),
-              limit : ENTRIES_PER_PAGE }
-    db.view( "brewery", "by_name", q).query(function(err, results) {
-      var breweries = [];
-      for(var k in results) {
-        breweries.push({
-          'id': results[k].id,
-          'name': results[k].key
-        });
-      }
+    var term = n1qlCleanString(req.query.value).toLowerCase();
 
+    db.query(
+        "SELECT META().id, name FROM beer-sample WHERE type='brewery' AND LOWER(name) LIKE '%" + term + "%' LIMIT " + ENTRIES_PER_PAGE,
+        function(err, breweries) {
       res.send(breweries);
     });
   };

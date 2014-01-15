@@ -7,6 +7,6 @@
     "underscore": "~1.5.1",
 	  "express": "~3.3.7",
 	  "jade": "~0.35.0",
-    "couchbase": "~0.1.0"
+    "couchbase": "git+https://github.com/couchbase/couchnode#master"
   }
 }
