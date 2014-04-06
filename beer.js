@@ -10,5 +10,12 @@ var config = {
 }
 
 if( require.main == module ) {
+  argv = process.argv.splice(2);
+  if( argv[0] === '--setup' ) {
+    beer_app.setup( config );
+  } else if( argv[0] === '--reset' ) {
+    beer_app.reset( config );
+  } else {
     beer_app.start( config );
+  }
 }

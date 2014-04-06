@@ -1,3 +1,5 @@
+
+
 var fs = require('fs');
 var express = require('express');
 var jade = require('jade');
@@ -12,6 +14,31 @@ function n1qlCleanString(val) {
   val = val.replace('\'', '\\\'');
   return val;
 }
+
+exports.setup = function(config) {
+  var db = new couchbase.Connection( config, function( err ) {
+    if (err) {
+      console.error("Failed to connect to cluster: " + err);
+      process.exit(1);
+    }
+
+    db.query(
+        "CREATE INDEX nameindex ON beer-sample(name) USING VIEW",
+        function(err, res) {
+      if (err) {
+        console.error("Failed to create secondary index: " + err);
+        process.exit(1);
+      }
+
+      console.log('Indexes setup');
+      process.exit(0);
+    });
+  });
+};
+
+exports.reset = function(config) {
+
+};
 
 exports.start = function(config)
 {
@@ -149,7 +176,6 @@ exports.start = function(config)
   app.get('/beers/edit/:beer_id', begin_edit_beer);
   app.post('/beers/edit/:beer_id', done_edit_beer);
 
-
   // Create a new beer document. Same as edit, only that we use add() API
   // instead of set() API.
   function begin_create_beer(req, res) {
@@ -183,7 +209,7 @@ exports.start = function(config)
     var term = n1qlCleanString(req.query.value).toLowerCase();
 
     db.query(
-        "SELECT META().id, name, brewery_id FROM beer-sample WHERE type='beer' AND LOWER(name) LIKE '%" + term + "%' LIMIT " + ENTRIES_PER_PAGE,
+        "SELECT META().id, name, brewery_id FROM beer-sample WHERE type='beer' AND name LIKE '" + term + "%' LIMIT " + ENTRIES_PER_PAGE,
         function(err, beers) {
       res.send(beers);
     });
