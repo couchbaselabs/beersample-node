@@ -3,6 +3,7 @@ var express = require('express');
 var jade = require('jade');
 var couchbase = require('couchbase');
 var _ = require('underscore');
+var ViewQuery = couchbase.ViewQuery;
 
 var ENTRIES_PER_PAGE = 30;
 
@@ -10,7 +11,9 @@ exports.start = function(config)
 {
   // Connect with couchbase server.  All subsequent API calls
   // to `couchbase` library is made via this Connection
-  var db = new couchbase.Connection( config, function( err ) {
+  var cb = new couchbase.Cluster(config.connstr);
+  var db = cb.openBucket(config.bucket);
+  db.on('connect', function(err) {
     if(err) {
       console.error("Failed to connect to cluster: " + err);
       process.exit(1);
@@ -26,6 +29,10 @@ exports.start = function(config)
   app.set('view engine', 'jade');
   app.locals.pretty = true;
 
+  // Index page redirect
+  app.get('/', function(req, res) {
+    res.redirect('/welcome');
+  });
 
   // Welcome page.
   function welcome(req, res) {
@@ -35,12 +42,10 @@ exports.start = function(config)
 
   // List of beers.
   function list_beers(req, res) {
-    var q = {
-      limit : ENTRIES_PER_PAGE,   // configure max number of entries.
-      stale : false               // We don't want stale views here.
-    };
-
-    db.view( "beer", "by_name", q).query(function(err, values) {
+    var q = ViewQuery.from('beer', 'by_name')
+        .limit(ENTRIES_PER_PAGE)
+        .stale(ViewQuery.Update.BEFORE);
+    db.query(q, function(err, values) {
       // 'by_name' view's map function emits beer-name as key and value as
       // null. So values will be a list of
       //      [ {id: <beer-id>, key: <beer-name>, value: <null>}, ... ]
@@ -48,7 +53,7 @@ exports.start = function(config)
       // we will fetch all the beer documents based on its id.
       var keys = _.pluck(values, 'id');
 
-      db.getMulti( keys, null, function(err, results) {
+      db.getMulti( keys, function(err, results) {
 
         // Add the id to the document before sending to template
         var beers = _.map(results, function(v, k) {
@@ -65,8 +70,9 @@ exports.start = function(config)
   // List of brewery. Logic is same as above except that we will be gathering
   // brewery documents and rendering them.
   function list_breweries(req, res) {
-    var q = { limit:ENTRIES_PER_PAGE };
-    db.view( "brewery", "by_name", q).query(function(err, results) {
+    var q = ViewQuery.from('brewery', 'by_name')
+        .limit(ENTRIES_PER_PAGE);
+    db.query(q, function(err, results) {
       var breweries = _.map(results, function(v, k) {
         return {
           'id': v.id,
@@ -200,13 +206,16 @@ exports.start = function(config)
 
   function search_beer(req, res) {
     var value = req.query.value;
-    var q = { startkey : value,
-              endkey : value + JSON.parse('"\u0FFF"'),
-              stale : false,
-              limit : ENTRIES_PER_PAGE }
-    db.view( "beer", "by_name", q).query(function(err, values) {
+    var q = ViewQuery.from('beer', 'by_name')
+        .range(value, value + JSON.parse('"\u0FFF"'))
+        .stale(ViewQuery.Update.BEFORE)
+        .limit(ENTRIES_PER_PAGE);
+    db.query(q, function(err, values) {
       var keys = _.pluck(values, 'id');
-      db.getMulti( keys, null, function(err, results) {
+      if (keys.length <= 0) {
+        return res.send([]);
+      }
+      db.getMulti(keys, function(err, results) {
         var beers = [];
         for(var k in results) {
           beers.push({
@@ -224,10 +233,10 @@ exports.start = function(config)
 
   function search_brewery(req, res) {
     var value = req.query.value;
-    var q = { startkey : value,
-              endkey : value + JSON.parse('"\u0FFF"'),
-              limit : ENTRIES_PER_PAGE }
-    db.view( "brewery", "by_name", q).query(function(err, results) {
+    var q = ViewQuery.from('beer', 'by_name')
+        .range(value, value + JSON.parse('"\u0FFF"'))
+        .limit(ENTRIES_PER_PAGE);
+    db.query(q, function(err, results) {
       var breweries = [];
       for(var k in results) {
         breweries.push({

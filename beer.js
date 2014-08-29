@@ -5,7 +5,7 @@ var beer_app = require('./beer_app');
 // while connecting with the server we are also opening the beer-sample
 // bucket.
 var config = {
-    host : [ "localhost:8091" ],
+    connstr : "http://localhost:8091",
     bucket : 'beer-sample'
 }
 
