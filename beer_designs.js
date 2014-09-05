@@ -23,18 +23,20 @@ exports.setup = function( config ) {
               ].join('\n')
     }
 
-    var bsbucket = new couchbase.Connection( config, function( err ) {
+    var bscluster = new couchbase.Cluster(config.connstr);
+    var bsbucket = bscluster.openBucket(config.bucket, function( err ) {
         if(err) {
             console.log("Unable to connect to server");
             console.log(config);
             process.exit(1);
         }
-
+       
+        var bmanager = bsbucket.manager();
         // Update the beer view, to index beers `by_name`.
-        bsbucket.getDesignDoc( "beer", function( err, ddoc, meta ) {
+        bmanager.getDesignDocument( "beer", function( err, ddoc, meta ) {
             if(! ('by_name' in ddoc['views']) ) {
                 ddoc.views.by_name = beer_by_name;
-                bsbucket.setDesignDoc( "beer", ddoc, function( err, res ) {
+                bmanager.upsertDesignDocument( "beer", ddoc, function( err, res ) {
                     if(err) {
                         console.log( 'ERROR' + err );
                     } else if (res.ok) {
@@ -42,11 +44,11 @@ exports.setup = function( config ) {
                     }
 
                     // Update or create the brewery view, to index brewery or `by_name`.
-                    bsbucket.getDesignDoc( "brewery", function( err, ddoc, meta ) {
+                    bmanager.getDesignDocument( "brewery", function( err, ddoc, meta ) {
                       if (err) {
                         console.log( "Creating the brewery view" );
                         breweries_design = { views : {by_name : breweries_by_name} };
-                        bsbucket.setDesignDoc( "brewery", breweries_design, function(err) {
+                        bmanager.upsertDesignDocument( "brewery", breweries_design, function(err) {
                           if(err) {
                               console.log( 'ERROR' + err );
                           } else if (res.ok) {
@@ -59,7 +61,7 @@ exports.setup = function( config ) {
                         if(! ('by_name' in ddoc['views']) ) {
                           console.log("Updating the brewery view");
                           ddoc['views']['by_name'] = breweries_by_name;
-                          bsbucket.setDesignDoc( "brewery", ddoc, function( err, res ) {
+                          bmanager.upsertDesignDocument( "brewery", ddoc, function( err, res ) {
                             if(err) {
                               console.log( 'ERROR' + err );
                             } else if (res.ok) {
@@ -82,19 +84,21 @@ exports.setup = function( config ) {
 }
 
 exports.reset = function( config ) {
-  var bsbucket = new couchbase.Connection( config, function( err ) {
+  var bscluster = new couchbase.Cluster(config.connstr);
+  var bsbucket = bscluster.openBucket(config.bucket, function( err ) {
     if(err) {
       console.error("Failed to connect to cluster: " + err);
       process.exit(1);
     }
+    var bmanager = bsbucket.manager();
 
     // Update the beer view, to index beers `by_name`.
-    bsbucket.getDesignDoc( "beer", function( err, ddoc, meta ) {
+    bmanager.getDesignDocument( "beer", function( err, ddoc, meta ) {
       console.log(err);
       console.log('get done');
 
       delete ddoc['views']['by_name'];
-      bsbucket.setDesignDoc( "beer", ddoc, function( err, res ) {
+      bmanager.upsertDesignDocument( "beer", ddoc, function( err, res ) {
         console.log('set done');
 
         if(err) {
@@ -104,7 +108,7 @@ exports.reset = function( config ) {
         }
 
         // Update or create the brewery view, to index brewery or `by_name`.
-        bsbucket.removeDesignDoc( "brewery", function(err, res) {
+        bmanager.deleteDesignDocument( "brewery", function(err, res) {
           console.log('delete done');
             console.log(err);
 
@@ -115,3 +119,4 @@ exports.reset = function( config ) {
     })
   })
 }
+
