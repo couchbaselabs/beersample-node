@@ -164,7 +164,7 @@ exports.start = function(config)
       if (result.value === undefined) { // Trying to edit non-existing doc ?
         res.send(404);
       } else {    // Set and redirect.
-        db.set( req.params.beer_id, doc, function(err, doc, meta) {
+        db.upsert( req.params.beer_id, doc, function(err, doc, meta) {
           res.redirect('/beers/show/'+req.params.beer_id);
         })
       }
@@ -195,7 +195,7 @@ exports.start = function(config)
     var doc = normalize_beer_fields(req.body);
     var beer_id = doc.brewery_id.toLowerCase() + '-' +
                   doc.name.replace(' ', '-').toLowerCase();
-    db.add( beer_id, doc, function(err, result) {
+    db.insert( beer_id, doc, function(err, result) {
       if (err) throw err;
       res.redirect('/beers/show/'+beer_id);
     });
