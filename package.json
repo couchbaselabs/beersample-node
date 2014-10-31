@@ -4,9 +4,12 @@
   "version": "0.0.2",
   "private": true,
   "dependencies": {
-    "underscore": "~1.5.1",
-	  "express": "~3.3.7",
-	  "jade": "~0.35.0",
-    "couchbase": "2.0.0"
+    "couchbase": "2.0.0",
+    "express": "~3.3.7",
+    "jade": "~0.35.0",
+    "underscore": "~1.5.1"
+  },
+  "scripts": {
+    "start": "node beer.js --setup && node beer.js"
   }
 }
