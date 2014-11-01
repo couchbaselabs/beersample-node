@@ -178,7 +178,7 @@ exports.start = function(config) {
   function done_edit_beer(req, res) {
     var doc = normalize_beer_fields(req.body);
 
-    db.get(rc.doc.brewery_id, function(err, result) {
+    db.get(doc.brewery_id, function(err, result) {
       if (result.value === undefined) { // Trying to edit non-existing doc ?
         res.send(404);
       } else { // Set and redirect.
