@@ -7,14 +7,13 @@ var ViewQuery = couchbase.ViewQuery;
 
 var ENTRIES_PER_PAGE = 30;
 
-exports.start = function(config)
-{
+exports.start = function(config) {
   // Connect with couchbase server.  All subsequent API calls
   // to `couchbase` library is made via this Connection
   var cb = new couchbase.Cluster(config.connstr);
   var db = cb.openBucket(config.bucket);
   db.on('connect', function(err) {
-    if(err) {
+    if (err) {
       console.error("Failed to connect to cluster: " + err);
       process.exit(1);
     }
@@ -43,8 +42,8 @@ exports.start = function(config)
   // List of beers.
   function list_beers(req, res) {
     var q = ViewQuery.from('beer', 'by_name')
-        .limit(ENTRIES_PER_PAGE)
-        .stale(ViewQuery.Update.BEFORE);
+      .limit(ENTRIES_PER_PAGE)
+      .stale(ViewQuery.Update.BEFORE);
     db.query(q, function(err, values) {
       // 'by_name' view's map function emits beer-name as key and value as
       // null. So values will be a list of
@@ -53,7 +52,7 @@ exports.start = function(config)
       // we will fetch all the beer documents based on its id.
       var keys = _.pluck(values, 'id');
 
-      db.getMulti( keys, function(err, results) {
+      db.getMulti(keys, function(err, results) {
 
         // Add the id to the document before sending to template
         var beers = _.map(results, function(v, k) {
@@ -61,7 +60,9 @@ exports.start = function(config)
           return v.value;
         });
 
-        res.render('beer/index', {'beers':beers});
+        res.render('beer/index', {
+          'beers': beers
+        });
       })
     });
   }
@@ -71,7 +72,7 @@ exports.start = function(config)
   // brewery documents and rendering them.
   function list_breweries(req, res) {
     var q = ViewQuery.from('brewery', 'by_name')
-        .limit(ENTRIES_PER_PAGE);
+      .limit(ENTRIES_PER_PAGE);
     db.query(q, function(err, results) {
       var breweries = _.map(results, function(v, k) {
         return {
@@ -80,17 +81,20 @@ exports.start = function(config)
         };
       });
 
-      res.render('brewery/index', {'breweries':breweries});
+      res.render('brewery/index', {
+        'breweries': breweries
+      });
     });
   }
   app.get('/breweries', list_breweries);
 
   // Delete a beer document or brewery document. Document `id` is supplied as
   // part of the URL.
-  function delete_object( req, res ) {
-    db.remove( req.params.object_id, function(err, meta) {
-      if( err ) {
-        console.log( 'Unable to delete document `' + req.params.object_id + '`' );
+  function delete_object(req, res) {
+    db.remove(req.params.object_id, function(err, meta) {
+      if (err) {
+        console.log('Unable to delete document `' + req.params.object_id +
+          '`');
       }
 
       res.redirect('/welcome');
@@ -104,16 +108,21 @@ exports.start = function(config)
   // Show individual beer document, with all its details. Document `id` is
   // supplied as part of the URL.
   function show_beer(req, res) {
-    db.get( req.params.beer_id, function(err, result) {
+    db.get(req.params.beer_id, function(err, result) {
       var doc = result.value;
-      if( doc === undefined ) {
+      if (doc === undefined) {
         res.send(404);
       } else {
         doc.id = req.params.beer_id;
 
         var view = {
           'beer': doc,
-          'beerfields': _.map(doc, function(v,k){return {'key':k,'value':v};})
+          'beerfields': _.map(doc, function(v, k) {
+            return {
+              'key': k,
+              'value': v
+            };
+          })
         };
         res.render('beer/show', view);
       }
@@ -124,17 +133,22 @@ exports.start = function(config)
   // Show individual brewery document, with all its details. Document `id` is
   // supplied as part of the URL.
   function show_brewery(req, res) {
-    db.get( req.params.brewery_id, function(err, result) {
+    db.get(req.params.brewery_id, function(err, result) {
       var doc = result.value;
 
-      if( doc === undefined ) {
+      if (doc === undefined) {
         res.send(404);
       } else {
         doc.id = req.params.brewery_id;
 
         var view = {
           'brewery': doc,
-          'breweryfields': _.map(doc, function(v,k){return {'key':k,'value':v};})
+          'breweryfields': _.map(doc, function(v, k) {
+            return {
+              'key': k,
+              'value': v
+            };
+          })
         };
         res.render('brewery/show', view);
       }
@@ -148,24 +162,28 @@ exports.start = function(config)
   function begin_edit_beer(req, res) {
     db.get(req.params.beer_id, function(err, result) {
       var doc = result.value;
-      if( doc === undefined ) { // Trying to edit non-existing doc ?
+      if (doc === undefined) { // Trying to edit non-existing doc ?
         res.send(404);
       } else { // render form.
         doc.id = req.params.beer_id;
-        var view = { is_create: false, beer: doc };
+        var view = {
+          is_create: false,
+          beer: doc
+        };
         res.render('beer/edit', view);
       }
     });
   }
+
   function done_edit_beer(req, res) {
     var doc = normalize_beer_fields(req.body);
 
-    db.get( rc.doc.brewery_id, function(err, result) {
+    db.get(rc.doc.brewery_id, function(err, result) {
       if (result.value === undefined) { // Trying to edit non-existing doc ?
         res.send(404);
-      } else {    // Set and redirect.
-        db.upsert( req.params.beer_id, doc, function(err, doc, meta) {
-          res.redirect('/beers/show/'+req.params.beer_id);
+      } else { // Set and redirect.
+        db.upsert(req.params.beer_id, doc, function(err, doc, meta) {
+          res.redirect('/beers/show/' + req.params.beer_id);
         })
       }
     });
@@ -177,27 +195,31 @@ exports.start = function(config)
   // Create a new beer document. Same as edit, only that we use add() API
   // instead of set() API.
   function begin_create_beer(req, res) {
-    var view = { is_create : true, beer:{
-      type: '',
-      name: '',
-      description: '',
-      style: '',
-      category: '',
-      abv: '',
-      ibu: '',
-      srm: '',
-      upc: '',
-      brewery_id: ''
-    } };
+    var view = {
+      is_create: true,
+      beer: {
+        type: '',
+        name: '',
+        description: '',
+        style: '',
+        category: '',
+        abv: '',
+        ibu: '',
+        srm: '',
+        upc: '',
+        brewery_id: ''
+      }
+    };
     res.render('beer/edit', view);
   }
+
   function done_create_beer(req, res) {
     var doc = normalize_beer_fields(req.body);
     var beer_id = doc.brewery_id.toLowerCase() + '-' +
-                  doc.name.replace(' ', '-').toLowerCase();
-    db.insert( beer_id, doc, function(err, result) {
+      doc.name.replace(' ', '-').toLowerCase();
+    db.insert(beer_id, doc, function(err, result) {
       if (err) throw err;
-      res.redirect('/beers/show/'+beer_id);
+      res.redirect('/beers/show/' + beer_id);
     });
   }
   app.get('/beers/create', begin_create_beer);
@@ -207,9 +229,9 @@ exports.start = function(config)
   function search_beer(req, res) {
     var value = req.query.value;
     var q = ViewQuery.from('beer', 'by_name')
-        .range(value, value + JSON.parse('"\u0FFF"'))
-        .stale(ViewQuery.Update.BEFORE)
-        .limit(ENTRIES_PER_PAGE);
+      .range(value, value + JSON.parse('"\u0FFF"'))
+      .stale(ViewQuery.Update.BEFORE)
+      .limit(ENTRIES_PER_PAGE);
     db.query(q, function(err, values) {
       var keys = _.pluck(values, 'id');
       if (keys.length <= 0) {
@@ -217,7 +239,7 @@ exports.start = function(config)
       }
       db.getMulti(keys, function(err, results) {
         var beers = [];
-        for(var k in results) {
+        for (var k in results) {
           beers.push({
             'id': k,
             'name': results[k].value.name,
@@ -234,11 +256,11 @@ exports.start = function(config)
   function search_brewery(req, res) {
     var value = req.query.value;
     var q = ViewQuery.from('beer', 'by_name')
-        .range(value, value + JSON.parse('"\u0FFF"'))
-        .limit(ENTRIES_PER_PAGE);
+      .range(value, value + JSON.parse('"\u0FFF"'))
+      .limit(ENTRIES_PER_PAGE);
     db.query(q, function(err, results) {
       var breweries = [];
-      for(var k in results) {
+      for (var k in results) {
         breweries.push({
           'id': results[k].id,
           'name': results[k].key
@@ -251,8 +273,9 @@ exports.start = function(config)
   app.get('/breweries/search', search_brewery);
 
   // Start Express
-  app.listen(1337);
-  console.log('Server running at http://127.0.0.1:1337/');
+  var port = process.env.PORT || 1337;
+  app.listen(port);
+  console.log('Server running at http://127.0.0.1:', port);
 }
 
 // utility function to validate form submissions - creating / editing beer
@@ -260,7 +283,7 @@ exports.start = function(config)
 function normalize_beer_fields(data) {
   var doc = {};
   _.each(data, function(value, key) {
-    if(key.substr(0,4) == 'beer') {
+    if (key.substr(0, 4) == 'beer') {
       doc[key.substr(5)] = value;
     }
   });
