@@ -7,6 +7,6 @@
     "couchbase": "^2.6.8",
     "express": "^3.21.2",
     "jade": "^1.11.0",
-    "underscore": "^1.9.1"
+    "underscore": "^1.12.1"
   }
 }
